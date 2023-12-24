@@ -1,0 +1,139 @@
+﻿@page "/"
+
+@rendermode RenderMode.InteractiveWebAssembly
+
+@using Blazor.Extensions;
+@using Blazor.Extensions.Canvas
+@using Blazor.Extensions.Canvas.Canvas2D;
+
+<PageTitle>Raycast</PageTitle>
+
+<BECanvas Width="1000" Height="800" @ref="_canvasReference"></BECanvas>
+
+@code {
+    Canvas2DContext _context;
+
+    BECanvas _canvasReference { get; set; } = default!;
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
+            
+            this.MyMap = CreateMap(15, 15);
+            DrawMap();
+            this.StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    WorldMap MyMap = null!;
+
+    int[][] _worldMap = new int[][]{
+        [1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 2, 2, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 2, 2, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 2, 2, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 2, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+        [1, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    };
+
+    public WorldMap CreateMap(int width, int height)
+    {
+        var map = new WorldMap();
+        map.Width = width;
+        map.Height = height;
+        map.Pixels = new Pixel[width][];
+        for (int i = 0; i < width; i++)
+        {
+            map.Pixels[i] = new Pixel[height];
+            for (int j = 0; j < height; j++)
+            {
+                try
+                {
+                    map.Pixels[i][j] = new Pixel() { x = i, y = j, MyMaterial = (Material)_worldMap[i][j] };
+                }
+                catch (Exception ex)
+                {
+                    
+                    throw;
+                }
+            }
+        }
+        return map;
+    }
+
+    public class WorldMap
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public Pixel[][] Pixels { get; set; }
+    }
+
+    public class Pixel
+    {
+        public Material MyMaterial { get; set; }
+
+        public int x { get; set; }
+
+        public int y { get; set; }
+
+        public static Pixel P(int x, int y, Material material)
+        {
+            return new Pixel() { x = x, y = y, MyMaterial = material };
+        }
+    }
+
+    public enum Material
+    {
+        FreeSpace = 0,
+        Wall = 1,
+        Player = 2,
+        Enemy = 3
+    }
+
+    public static class Materials
+    {
+        public static string[] TextureMaterials = new string[]
+        {
+            "#4a210d",
+            "#ae2828",
+            "#41b741",
+            "#000000"
+        };
+
+        public static string GetTexture(Material index)
+        {
+            return TextureMaterials[(int)index];
+        }
+    }
+
+    private async void DrawMap()
+    {
+        if (this.MyMap != null)
+        {
+            int pixelSize = 50; // Tamanho de cada "pixel" no canvas
+
+            for (int i = 0; i < this.MyMap.Pixels.Length; i++)
+            {
+                for (int j = 0; j < this.MyMap.Pixels[i].Length; j++)
+                {
+                    var pixel = this.MyMap.Pixels[i][j];
+                    await _context.SetFillStyleAsync(Materials.GetTexture(pixel.MyMaterial));
+                    await _context.FillRectAsync(j * pixelSize, i * pixelSize, pixelSize, pixelSize);
+                }
+            }
+        }
+    }
+}
