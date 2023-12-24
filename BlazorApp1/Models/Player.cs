@@ -1,4 +1,5 @@
 ﻿using Blazor.Extensions.Canvas.Canvas2D;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorApp1.Models
 {
@@ -84,6 +85,25 @@ namespace BlazorApp1.Models
 
             // Aqui você pode adicionar condições para verificar se o personagem atingiu o alvo
             // e parar ou ajustar o movimento conforme necessário.
+        }
+
+        private async Task HandleKeyDown(KeyboardEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case "ArrowUp":
+                    this.MoveUp();
+                    break;
+                case "ArrowDown":
+                    this.MoveDown();
+                    break;
+                case "ArrowLeft":
+                    this.MoveLeft();
+                    break;
+                case "ArrowRight":
+                    this.MoveRight();
+                    break;
+            }
         }
     }
 

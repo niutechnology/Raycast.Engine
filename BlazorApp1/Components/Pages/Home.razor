@@ -8,7 +8,7 @@
 @using BlazorApp1.Models
 
 <PageTitle>Raycast</PageTitle>
-<div @onkeydown="HandleKeyDown" @onmousedown=HandleMouseMove>
+<div @onmousedown=HandleMouseMove>
     <BECanvas Width="1000" Height="800" @ref="_canvasReference"></BECanvas>
 </div>
 
@@ -68,25 +68,5 @@
         }
 
         await base.OnAfterRenderAsync(firstRender);
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        switch (e.Key)
-        {
-            case "ArrowUp":
-                _character.MoveUp();
-                break;
-            case "ArrowDown":
-                _character.MoveDown();
-                break;
-            case "ArrowLeft":
-                _character.MoveLeft();
-                break;
-            case "ArrowRight":
-                _character.MoveRight();
-                break;
-        }
-        await UpdateAndRedrawCharacter();
     }
 }
