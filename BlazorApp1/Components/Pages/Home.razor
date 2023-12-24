@@ -5,48 +5,28 @@
 @using Blazor.Extensions;
 @using Blazor.Extensions.Canvas
 @using Blazor.Extensions.Canvas.Canvas2D;
+@using BlazorApp1.Models
 
 <PageTitle>Raycast</PageTitle>
-
-@*
-@if (this.MyMap != null)
-{
-    <div class="map">
-        @foreach (var row in this.MyMap.Pixels)
-        {
-            <div class="row">
-                @foreach (var pixel in row)
-                {
-                    <div class="pixel" style="background-color: @Materials.GetTexture(pixel.MyMaterial)"></div>
-                }
-            </div>
-        }
-    </div>
-} *@
-
-<BECanvas Width="500" Height="500" @ref="_canvasReference"></BECanvas>
+<div @onkeydown="HandleKeyDown" @onmousedown=HandleMouseMove>
+    <BECanvas Width="1000" Height="800" @ref="_canvasReference"></BECanvas>
+</div>
 
 @code {
     Canvas2DContext _context;
 
     BECanvas _canvasReference { get; set; } = default!;
-
-
-    protected async override Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            this._context = await this._canvasReference.CreateCanvas2DAsync();
-            this.MyMap = CreateMap(500, 500);
-            DrawMap();
-            await Test();
-            this.StateHasChanged();
-        }
-
-        await base.OnAfterRenderAsync(firstRender);
-    }
-
+    System.Timers.Timer _timer;
+    Character _character;
+    private List<DrawCommand> drawCommands = new List<DrawCommand>();
     WorldMap MyMap = null!;
+
+    private async Task HandleMouseMove(MouseEventArgs e)
+    {
+        // Atualize a posição alvo do personagem com a posição do mouse
+        _character.TargetPosition = new Position((float)e.ClientX, (float)e.ClientY);
+        await UpdateAndRedrawCharacter();
+    }
 
     int[][] _worldMap = new int[][]{
         [1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -66,101 +46,47 @@
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     };
 
-    public WorldMap CreateMap(int width, int height)
+    protected async override Task OnAfterRenderAsync(bool firstRender)
     {
-        var map = new WorldMap();
-        map.Width = width;
-        map.Height = height;
-        map.Pixels = new Pixel[width][];
-        for (int i = 0; i < width; i++)
+        if (firstRender)
         {
-            map.Pixels[i] = new Pixel[height];
-            for (int j = 0; j < height; j++)
-            {
-                map.Pixels[i][j] = new Pixel() { x = i, y = j, MyMaterial = (Material)_worldMap[i][j] };
-            }
-        }
-        return map;
-    }
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
 
-    public class WorldMap
-    {
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public Pixel[][] Pixels { get; set; }
-    }
+            this.MyMap = CreateMap(15, 15);
+            await DrawMap();
 
-    public class Pixel
-    {
-        public Material MyMaterial { get; set; }
-
-        public int x { get; set; }
-
-        public int y { get; set; }
-
-        public static Pixel P(int x, int y, Material material)
-        {
-            return new Pixel() { x = x, y = y, MyMaterial = material };
-        }
-    }
-
-    public enum Material
-    {
-        FreeSpace = 0,
-        Wall = 1,
-        Player = 2,
-        Enemy = 3
-    }
-
-    public static class Materials
-    {
-        public static string[] TextureMaterials = new string[]
-        {
-            "#4a210d",
-            "#ae2828",
-            "#41b741",
-            "#000000"
-        };
-
-        public static string GetTexture(Material index)
-        {
-            return TextureMaterials[(int)index];
-        }
-    }
-
-    private async void DrawMap()
-    {
-        if (this.MyMap != null)
-        {
-            int pixelSize = 50; // Tamanho de cada "pixel" no canvas
-
-            for (int i = 0; i < this.MyMap.Pixels.Length; i++)
-            {
-                for (int j = 0; j < this.MyMap.Pixels[i].Length; j++)
+            _character = new Character
                 {
-                    var pixel = this.MyMap.Pixels[i][j];
-                    await _context.SetFillStyleAsync(Materials.GetTexture(pixel.MyMaterial));
-                    await _context.FillRectAsync(j * pixelSize, i * pixelSize, pixelSize, pixelSize);
-                }
-            }
+                    Position = new Position(50, 50),
+                    Size = 30,
+                    Color = "red",
+                    MovementSpeed = 5
+                };
+            await _character.Draw(_context);
+
+            this.StateHasChanged();
         }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
-    private async Task Test()
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        int xEspaco = 10;
-        int XvalorPosicao = xEspaco;
-        int calculoLargura = 500;
-        int alturaGrafico = Convert.ToInt32(_canvasReference.Height) - 40;
-        this._context = await this._canvasReference.CreateCanvas2DAsync();
-        int valorCor = 0;
-        // Desenha os eixos
-        await this._context.BeginPathAsync();
-        await this._context.MoveToAsync(xEspaco, xEspaco);
-        // primeiro desenha o eixo Y
-        await this._context.LineToAsync(xEspaco, alturaGrafico);
-        // desenha o eixo X
-        await this._context.LineToAsync(Convert.ToInt32(_canvasReference.Width) - 10, alturaGrafico);
-        await this._context.StrokeAsync();
+        switch (e.Key)
+        {
+            case "ArrowUp":
+                _character.MoveUp();
+                break;
+            case "ArrowDown":
+                _character.MoveDown();
+                break;
+            case "ArrowLeft":
+                _character.MoveLeft();
+                break;
+            case "ArrowRight":
+                _character.MoveRight();
+                break;
+        }
+        await UpdateAndRedrawCharacter();
     }
 }
